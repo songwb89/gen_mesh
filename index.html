@@ -17,44 +17,22 @@
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', sans-serif;
+            padding: 20px;
         }
         .container {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 40px;
+            gap: 20px;
             position: relative;
+            width: 100%;
+            max-width: 500px;
         }
-        /* 播放器区域 */
-        .player {
-            width: 640px;
-            height: 400px;
-            background: #000;
-            border-radius: 12px;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
-        .player-placeholder {
-            color: #444;
-            font-size: 24px;
-            text-align: center;
-        }
-        .player-placeholder span {
-            display: block;
-            font-size: 64px;
-            margin-bottom: 10px;
-        }
-        /* 播放按钮 */
+        /* 控制按钮 */
         .play-btn {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
             width: 60px;
             height: 60px;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             border: none;
             border-radius: 50%;
             cursor: pointer;
@@ -62,11 +40,11 @@
             justify-content: center;
             align-items: center;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            -webkit-tap-highlight-color: transparent;
         }
-        .play-btn:hover {
-            background: #fff;
-            transform: translateX(-50%) scale(1.1);
+        .play-btn:active {
+            transform: scale(0.95);
         }
         .play-btn svg {
             width: 24px;
@@ -78,82 +56,93 @@
         .play-btn.playing .pause-icon { display: block; }
         /* 数字人区域 */
         .digital-human {
-            width: 500px;
-            height: 667px;
+            width: 100%;
+            max-width: 300px;
+            aspect-ratio: 500/667;
             position: relative;
             overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .digital-human-sprite {
-            width: 41000px; /* 500px * 82帧 */
-            height: 667px;
+            width: 24600px; /* 300px * 82帧 */
+            height: 100%;
             background-repeat: no-repeat;
-            background-size: 41000px 667px;
+            background-size: 24600px 100%;
             transition: none;
         }
         .status {
-            position: absolute;
+            position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             color: #4ade80;
             font-size: 14px;
             white-space: nowrap;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
         }
         .status.paused { color: #f87171; }
+        
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                gap: 15px;
+            }
+            .play-btn {
+                width: 50px;
+                height: 50px;
+            }
+            .play-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 左侧数字人 -->
+        <!-- 数字人 -->
         <div class="digital-human">
-            <div id="avatarLeft" class="digital-human-sprite" style="background-image: url('data/frames/sprite2.png');"></div>
+            <div id="avatar" class="digital-human-sprite" style="background-image: url('data/frames/sprite1.png');"></div>
         </div>
-        <!-- 播放器 -->
-        <div class="player">
-            <div class="player-placeholder">
-                <span>🎬</span>
-                视频播放区域
-            </div>
-            <button class="play-btn" id="playBtn">
-                <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            </button>
-        </div>
-        <!-- 右侧数字人 -->
-        <div class="digital-human">
-            <div id="avatarRight" class="digital-human-sprite" style="background-image: url('data/frames/sprite1.png');"></div>
-        </div>
+        
+        <!-- 播放/暂停按钮 -->
+        <button class="play-btn" id="playBtn">
+            <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        
         <div class="status paused" id="status">已暂停</div>
     </div>
 
     <script>
-        // 精灵图配置
-        const frameWidth = 500;
-        const totalFrames = 82; // 第1帧 + 第10-90帧 = 82帧
+        // 精灵图配置（移动端优化：300px宽度）
+        const frameWidth = 300;
+        const totalFrames = 82;
         const fps = 24;
         const frameInterval = 1000 / fps;
         
-        // 帧索引：0=第1帧（暂停用），1-81=第10-90帧（动画用）
-        const animStartIndex = 1; // 动画从索引1开始
-        const animEndIndex = 81;   // 动画到索引81结束
+        const animStartIndex = 1;
+        const animEndIndex = 81;
         
         let currentIndex = animStartIndex;
-        let direction = 1; // 1: 正放, -1: 倒放
+        let direction = 1;
         let isPlaying = false;
         let animationTimer = null;
         
         const playBtn = document.getElementById('playBtn');
-        const avatarLeft = document.getElementById('avatarLeft');
-        const avatarRight = document.getElementById('avatarRight');
+        const avatar = document.getElementById('avatar');
         const status = document.getElementById('status');
         
         function updateFrame() {
-            // 计算背景位置
             const offsetX = -currentIndex * frameWidth;
-            avatarLeft.style.backgroundPosition = `${offsetX}px 0`;
-            avatarRight.style.backgroundPosition = `${offsetX}px 0`;
+            avatar.style.backgroundPosition = `${offsetX}px 0`;
             
-            // 更新索引（乒乓播放）
             currentIndex += direction;
             if (currentIndex > animEndIndex) {
                 currentIndex = animEndIndex - 1;
@@ -178,9 +167,7 @@
             status.textContent = '已暂停';
             status.classList.add('paused');
             clearInterval(animationTimer);
-            // 暂停时显示第1帧（索引0）
-            avatarLeft.style.backgroundPosition = '0 0';
-            avatarRight.style.backgroundPosition = '0 0';
+            avatar.style.backgroundPosition = '0 0';
             currentIndex = animStartIndex;
             direction = 1;
         }
@@ -193,7 +180,6 @@
             }
         });
         
-        // 初始显示第1帧
         pause();
     </script>
 </body>
