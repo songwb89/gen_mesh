@@ -1,0 +1,30 @@
+# 临时文件
+data/temp_*
+*.pyc
+__pycache__/
+
+# 原始视频文件
+*.mp4
+*.avi
+*.mov
+
+# 单帧序列（只保留精灵图）
+data/frames/frame_*.png
+data/frames2/
+data/frames3/
+data/frames4/
+data/frames5/
+data/frames6/
+data/frames7/
+data/frames8/
+data/frames_loop/
+
+# 开发文件
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 备份文件
+*.bak
+*~
